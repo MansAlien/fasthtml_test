@@ -10,6 +10,8 @@ from googleapiclient.errors import HttpError
 import os.path
 import pickle
 import logging
+import textwrap
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -103,6 +105,7 @@ def upload_to_drive(buffer, filename):
 def get():
     form = Form(
         Input(id="name", name="name", placeholder="Your Name"),
+        Input(id="job", name="job", placeholder="Your job"),
         Input(id="course", name="course", placeholder="Course Title"),
         Input(id="date", name="date", placeholder="Completion Date"),
         Button("Generate Certificate"),
@@ -114,6 +117,7 @@ def get():
 class CertificateData:
     name: str
     course: str
+    job: str
     date: str
 
 @rt("/generate")
@@ -127,12 +131,35 @@ def post(cert: CertificateData):
 
     # Prepare to draw on the image
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype("Rubik-Bold.ttf", 40)
+    font_large = ImageFont.truetype("Rubik-Bold.ttf", 60)
+    font_small = ImageFont.truetype("Rubik-Bold.ttf", 40)
+    font_x_small = ImageFont.truetype("Rubik-Regular.ttf", 40)
 
-    # Add text to the image
-    draw.text((300, 200), f"Name: {cert.name}", font=font, fill="black")
-    draw.text((300, 300), f"Course: {cert.course}", font=font, fill="black")
-    draw.text((300, 400), f"Date: {cert.date}", font=font, fill="black")
+    # Function to center the text
+    def draw_centered_text(text, y_position, font_size=font_small, max_width=1200):
+        # Wrap the text to fit the maximum width
+        # Get the width of a space character to estimate how many characters fit in the max width
+        space_width = font_size.getbbox(" ")[2]  # Get the width of a single space
+        
+        # Calculate the approximate number of characters that fit within max_width
+        wrapped_text = textwrap.fill(text, width=int(max_width // space_width))  
+        lines = wrapped_text.split("\n")
+        
+        # Draw each line of text
+        y_offset = y_position
+        for line in lines:
+            # Calculate text size using getbbox
+            bbox = draw.textbbox((0, 0), line, font=font_size)
+            text_width = bbox[2] - bbox[0]
+            x_position = (img.width - text_width) // 2
+            draw.text((x_position, y_offset), line, font=font_size, fill="black")
+            y_offset += font_size.getbbox(line)[3]  # Move to the next line height
+
+    # Add centered text to the image
+    draw_centered_text(f"بأن / {cert.name}", 580, font_size=font_large)
+    draw_centered_text(cert.job, 640, font_size=font_large)
+    draw_centered_text(f"Course: {cert.course}", 740, font_size=font_large, max_width=800)
+    draw_centered_text(f"تحريراً {cert.date}", 950, font_size=font_x_small)
 
     # Save the image to an in-memory buffer
     buffer = BytesIO()
@@ -143,7 +170,7 @@ def post(cert: CertificateData):
     filename = f"certificate_{cert.name}_{cert.course}.png"
     try:
         file = upload_to_drive(buffer, filename)
-        logger.info(f"Certificate generated and uploaded successfully")
+        logger.info("Certificate generated and uploaded successfully")
         logger.info(f"File can be viewed at: {file.get('webViewLink')}")
     except Exception as e:
         logger.error(f"Failed to upload certificate: {str(e)}")
