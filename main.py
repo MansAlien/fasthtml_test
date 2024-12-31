@@ -126,25 +126,23 @@ def post(cert: CertificateData):
         return RedirectResponse("/", status_code=303)
 
     # Load the template image
-    template_path = "temp.png"
+    template_path = "static/img/temp.png"
     img = Image.open(template_path)
 
     # Prepare to draw on the image
     draw = ImageDraw.Draw(img)
-    font_large = ImageFont.truetype("Rubik-Bold.ttf", 60)
-    font_small = ImageFont.truetype("Rubik-Bold.ttf", 40)
-    font_x_small = ImageFont.truetype("Rubik-Regular.ttf", 40)
+    font_path = "static/fonts/noto_bold.ttf"
+    font_large = ImageFont.truetype(font_path, 60)
+    font_small = ImageFont.truetype(font_path, 40)
+    font_x_small = ImageFont.truetype(font_path, 40)
 
     # Function to center the text
-    def draw_centered_text(text, y_position, font_size=font_small, max_width=1200):
+    def draw_centered_text(text, y_position, font_size=font_small, max_width=1200, line_spacing=0.8):
         # Wrap the text to fit the maximum width
-        # Get the width of a space character to estimate how many characters fit in the max width
         space_width = font_size.getbbox(" ")[2]  # Get the width of a single space
-        
-        # Calculate the approximate number of characters that fit within max_width
         wrapped_text = textwrap.fill(text, width=int(max_width // space_width))  
         lines = wrapped_text.split("\n")
-        
+
         # Draw each line of text
         y_offset = y_position
         for line in lines:
@@ -153,12 +151,15 @@ def post(cert: CertificateData):
             text_width = bbox[2] - bbox[0]
             x_position = (img.width - text_width) // 2
             draw.text((x_position, y_offset), line, font=font_size, fill="black")
-            y_offset += font_size.getbbox(line)[3]  # Move to the next line height
+            
+            # Reduce the line spacing by scaling the font size
+            line_height = font_size.getbbox(line)[3]  # Height of the current line
+            y_offset += line_height * line_spacing 
 
     # Add centered text to the image
-    draw_centered_text(f"بأن / {cert.name}", 580, font_size=font_large)
-    draw_centered_text(cert.job, 640, font_size=font_large)
-    draw_centered_text(f"Course: {cert.course}", 740, font_size=font_large, max_width=800)
+    draw_centered_text(f"بأن / {cert.name}", 550, font_size=font_large)
+    draw_centered_text(cert.job, 620, font_size=font_large)
+    draw_centered_text(cert.course, 720, font_size=font_large, max_width=900)
     draw_centered_text(f"تحريراً {cert.date}", 950, font_size=font_x_small)
 
     # Save the image to an in-memory buffer
