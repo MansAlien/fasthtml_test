@@ -17,7 +17,13 @@ import textwrap
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app, rt = fast_app()
+font_1 = Link(rel='preconnect', href='https://fonts.googleapis.com')
+
+font_2 = Link(rel='preconnect', href='https://fonts.gstatic.com', crossorigin='')
+
+font_3 = Link(href='https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100..900&display=swap', rel='stylesheet')
+
+app, rt = fast_app(hdrs=(font_1, font_2, font_3))
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
